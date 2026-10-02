@@ -29,6 +29,69 @@ const dist  = (a, b)   => Math.hypot(a.x - b.x, a.y - b.y);
 const rand  = (min, max) => min + Math.random() * (max - min);
 const randInt = (min, max) => Math.floor(rand(min, max + 1));
 
+// ── Skins ─────────────────────────────────────────────────────────────────────
+const SKINS = [
+  {
+    name: 'CLÁSICO',
+    color: '#fff',
+    draw: (ctx) => {
+      ctx.beginPath();
+      ctx.moveTo(20, 0);
+      ctx.lineTo(-12, -9);
+      ctx.lineTo(-7, 0);
+      ctx.lineTo(-12, 9);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  },
+  {
+    name: 'NEÓN',
+    color: '#0ff',
+    draw: (ctx) => {
+      ctx.beginPath();
+      ctx.moveTo(20, 0);
+      ctx.lineTo(-10, -10);
+      ctx.lineTo(-10, 10);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(-2, 0, 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  },
+  {
+    name: 'VANGUARD',
+    color: '#f50',
+    draw: (ctx) => {
+      ctx.beginPath();
+      ctx.moveTo(22, 0);
+      ctx.lineTo(-8, -12);
+      ctx.lineTo(-4, -4);
+      ctx.lineTo(-12, 0);
+      ctx.lineTo(-4, 4);
+      ctx.lineTo(-8, 12);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  },
+  {
+    name: 'GALÁCTICO',
+    color: '#a0f',
+    draw: (ctx) => {
+      ctx.beginPath();
+      ctx.moveTo(20, 0);
+      ctx.quadraticCurveTo(0, -15, -15, -5);
+      ctx.lineTo(-10, 0);
+      ctx.lineTo(-15, 5);
+      ctx.quadraticCurveTo(0, 15, 20, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+];
+
 // ── Bullet ────────────────────────────────────────────────────────────────────
 class Bullet {
   constructor(x, y, angle) {
@@ -200,6 +263,7 @@ class Ship {
     this.shootCooldown = 0;
     this.speedTimer    = 0;
     this.dead          = false;
+    if (this.skinIndex === undefined) this.skinIndex = 0;
   }
 
   update(dt) {
@@ -227,6 +291,10 @@ class Ship {
     this.vy *= DRAG;
     this.x = wrap(this.x + this.vx * dt, W);
     this.y = wrap(this.y + this.vy * dt, H);
+
+    if (pressed('KeyS')) {
+      this.skinIndex = (this.skinIndex + 1) % SKINS.length;
+    }
   }
 
   tryShoot() {
@@ -243,21 +311,17 @@ class Ship {
     // Parpadeo durante invencibilidad de reaparición
     if (this.invincible > 0 && Math.floor(this.invincible * 8) % 2 === 0) return;
 
+    const skin = SKINS[this.skinIndex];
+
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = skin.color;
+    ctx.fillStyle = skin.color;
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
 
-    // Silueta clásica: triángulo con muesca trasera
-    ctx.beginPath();
-    ctx.moveTo( 20,  0);   // nariz
-    ctx.lineTo(-12, -9);   // ala izquierda
-    ctx.lineTo( -7,  0);   // muesca trasera
-    ctx.lineTo(-12,  9);   // ala derecha
-    ctx.closePath();
-    ctx.stroke();
+    skin.draw(ctx);
 
     // Llama del propulsor
     if (this.thrusting && Math.random() > 0.35) {
@@ -496,19 +560,16 @@ function update(dt) {
 
 // ── Draw ──────────────────────────────────────────────────────────────────────
 function drawLifeIcon(x, y) {
+  const skin = SKINS[ship.skinIndex];
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(-Math.PI / 2);
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth   = 1.2;
+  ctx.scale(0.7, 0.7);
+  ctx.strokeStyle = skin.color;
+  ctx.fillStyle = skin.color;
+  ctx.lineWidth   = 1.5;
   ctx.lineJoin    = 'round';
-  ctx.beginPath();
-  ctx.moveTo( 9,  0);
-  ctx.lineTo(-6, -5);
-  ctx.lineTo(-3,  0);
-  ctx.lineTo(-6,  5);
-  ctx.closePath();
-  ctx.stroke();
+  skin.draw(ctx);
   ctx.restore();
 }
 
@@ -540,6 +601,12 @@ function drawHUD() {
     ctx.fillStyle = '#0cf';
     ctx.fillRect(60, 39, barW * pct, 9);
   }
+
+  // Info de Skin
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.font = '12px monospace';
+  ctx.fillText(`SKIN [S]: ${SKINS[ship.skinIndex].name}`, 14, H - 14);
 }
 
 function drawOverlay(title, sub) {
